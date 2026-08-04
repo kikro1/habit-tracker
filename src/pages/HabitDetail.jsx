@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts'
-import { ArrowLeft, Flame, Trophy, TrendingUp, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Flame, Trophy, TrendingUp, Pencil, Trash2, TriangleAlert } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import TallyMarks from '../components/TallyMarks'
@@ -34,13 +34,16 @@ export default function HabitDetail() {
   const [logDates, setLogDates] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [banner, setBanner] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: habitData }, { data: logsData }] = await Promise.all([
-      supabase.from('habits').select('*').eq('id', id).single(),
-      supabase.from('habit_logs').select('date').eq('habit_id', id),
-    ])
+    const [{ data: habitData, error: habitError }, { data: logsData, error: logsError }] =
+      await Promise.all([
+        supabase.from('habits').select('*').eq('id', id).single(),
+        supabase.from('habit_logs').select('date').eq('habit_id', id),
+      ])
+    if (habitError || logsError) setBanner((habitError || logsError).message)
     setHabit(habitData ?? null)
     setLogDates((logsData ?? []).map((l) => l.date))
     setLoading(false)
@@ -55,10 +58,18 @@ export default function HabitDetail() {
   async function toggleDate(dateStr) {
     if (isFutureDate(dateStr)) return
     if (logSet.has(dateStr)) {
-      await supabase.from('habit_logs').delete().eq('habit_id', id).eq('date', dateStr)
+      const { error } = await supabase
+        .from('habit_logs')
+        .delete()
+        .eq('habit_id', id)
+        .eq('date', dateStr)
+      if (error) return setBanner(error.message)
       setLogDates((prev) => prev.filter((d) => d !== dateStr))
     } else {
-      await supabase.from('habit_logs').insert({ habit_id: id, user_id: user.id, date: dateStr })
+      const { error } = await supabase
+        .from('habit_logs')
+        .insert({ habit_id: id, user_id: user.id, date: dateStr })
+      if (error) return setBanner(error.message)
       setLogDates((prev) => [...prev, dateStr])
     }
   }
@@ -70,13 +81,15 @@ export default function HabitDetail() {
       .eq('id', id)
       .select()
       .single()
-    if (!error && data) setHabit(data)
-    setEditing(false)
+    if (error) return { error }
+    setHabit(data)
+    return {}
   }
 
   async function handleDelete() {
     if (!window.confirm(`Delete "${habit.name}"? This removes all its history too.`)) return
-    await supabase.from('habits').delete().eq('id', id)
+    const { error } = await supabase.from('habits').delete().eq('id', id)
+    if (error) return setBanner(error.message)
     navigate('/')
   }
 
@@ -98,6 +111,20 @@ export default function HabitDetail() {
       >
         <ArrowLeft size={15} /> Back to today
       </Link>
+
+      {banner && (
+        <div className="flex items-start gap-2 text-sm text-terracotta bg-terracotta-50 rounded-lg px-3 py-2 mb-4">
+          <TriangleAlert size={15} className="shrink-0 mt-0.5" />
+          <span className="flex-1">{banner}</span>
+          <button
+            type="button"
+            onClick={() => setBanner('')}
+            className="text-terracotta/70 hover:text-terracotta cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="flex items-start justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, BellRing } from 'lucide-react'
+import { requestNotificationPermission } from '../utils/notifications'
 
 const COLORS = [
   '#3f5b46', // moss
@@ -19,20 +20,37 @@ export default function NewHabitModal({ habit, onClose, onSubmit }) {
   const [color, setColor] = useState(habit?.color ?? COLORS[0])
   const [frequency, setFrequency] = useState(habit?.frequency ?? 'daily')
   const [goalTarget, setGoalTarget] = useState(habit?.goal_target ?? 1)
+  const [reminderTime, setReminderTime] = useState(habit?.reminder_time?.slice(0, 5) ?? '')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) return
     setSubmitting(true)
-    await onSubmit({
+    setError('')
+
+    if (reminderTime) {
+      requestNotificationPermission()
+    }
+
+    const result = await onSubmit({
       name: name.trim(),
       description: description.trim() || null,
       color,
       frequency,
       goal_target: Number(goalTarget),
+      reminder_time: reminderTime || null,
     })
+
     setSubmitting(false)
+
+    if (result?.error) {
+      setError(result.error.message || 'Something went wrong. Please try again.')
+      return
+    }
+
+    onClose()
   }
 
   return (
@@ -122,6 +140,30 @@ export default function NewHabitModal({ habit, onClose, onSubmit }) {
               />
             </label>
           </div>
+
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="text-ink-soft font-medium flex items-center gap-1.5">
+              <BellRing size={13} className="text-amber" />
+              Reminder time (optional)
+            </span>
+            <input
+              type="time"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+              className="rounded-lg border border-line bg-paper-dim px-3 py-2 text-ink outline-none focus:border-moss focus:ring-1 focus:ring-moss font-mono-num"
+            />
+            {reminderTime && (
+              <span className="text-xs text-ink-faint">
+                Needs this tab open and browser notifications allowed.
+              </span>
+            )}
+          </label>
+
+          {error && (
+            <p className="text-sm text-terracotta bg-terracotta-50 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
 
           <div className="flex gap-3 mt-2">
             <button

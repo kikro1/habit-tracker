@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, NotebookPen } from 'lucide-react'
+import { Plus, NotebookPen, TriangleAlert } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import HabitCard from '../components/HabitCard'
@@ -13,17 +13,23 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingHabit, setEditingHabit] = useState(null)
+  const [banner, setBanner] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    const [{ data: habitsData }, { data: logsData }] = await Promise.all([
-      supabase
-        .from('habits')
-        .select('*')
-        .eq('archived', false)
-        .order('created_at', { ascending: true }),
-      supabase.from('habit_logs').select('habit_id, date'),
-    ])
+    const [{ data: habitsData, error: habitsError }, { data: logsData, error: logsError }] =
+      await Promise.all([
+        supabase
+          .from('habits')
+          .select('*')
+          .eq('archived', false)
+          .order('created_at', { ascending: true }),
+        supabase.from('habit_logs').select('habit_id, date'),
+      ])
+
+    if (habitsError || logsError) {
+      setBanner((habitsError || logsError).message)
+    }
 
     setHabits(habitsData ?? [])
 
@@ -46,17 +52,29 @@ export default function Dashboard() {
     const doneToday = currentLogs.includes(today)
 
     if (doneToday) {
-      await supabase.from('habit_logs').delete().eq('habit_id', habit.id).eq('date', today)
+      const { error } = await supabase
+        .from('habit_logs')
+        .delete()
+        .eq('habit_id', habit.id)
+        .eq('date', today)
+      if (error) {
+        setBanner(error.message)
+        return
+      }
       setLogsByHabit((prev) => ({
         ...prev,
         [habit.id]: (prev[habit.id] ?? []).filter((d) => d !== today),
       }))
     } else {
-      await supabase.from('habit_logs').insert({
+      const { error } = await supabase.from('habit_logs').insert({
         habit_id: habit.id,
         user_id: user.id,
         date: today,
       })
+      if (error) {
+        setBanner(error.message)
+        return
+      }
       setLogsByHabit((prev) => ({
         ...prev,
         [habit.id]: [...(prev[habit.id] ?? []), today],
@@ -70,10 +88,9 @@ export default function Dashboard() {
       .insert({ ...values, user_id: user.id })
       .select()
       .single()
-    if (!error && data) {
-      setHabits((prev) => [...prev, data])
-    }
-    setModalOpen(false)
+    if (error) return { error }
+    setHabits((prev) => [...prev, data])
+    return {}
   }
 
   async function handleUpdate(values) {
@@ -83,15 +100,18 @@ export default function Dashboard() {
       .eq('id', editingHabit.id)
       .select()
       .single()
-    if (!error && data) {
-      setHabits((prev) => prev.map((h) => (h.id === data.id ? data : h)))
-    }
-    setEditingHabit(null)
+    if (error) return { error }
+    setHabits((prev) => prev.map((h) => (h.id === data.id ? data : h)))
+    return {}
   }
 
   async function handleDelete(habit) {
     if (!window.confirm(`Delete "${habit.name}"? This removes all its history too.`)) return
-    await supabase.from('habits').delete().eq('id', habit.id)
+    const { error } = await supabase.from('habits').delete().eq('id', habit.id)
+    if (error) {
+      setBanner(error.message)
+      return
+    }
     setHabits((prev) => prev.filter((h) => h.id !== habit.id))
   }
 
@@ -119,6 +139,20 @@ export default function Dashboard() {
           New habit
         </button>
       </div>
+
+      {banner && (
+        <div className="flex items-start gap-2 text-sm text-terracotta bg-terracotta-50 rounded-lg px-3 py-2 mb-4">
+          <TriangleAlert size={15} className="shrink-0 mt-0.5" />
+          <span className="flex-1">{banner}</span>
+          <button
+            type="button"
+            onClick={() => setBanner('')}
+            className="text-terracotta/70 hover:text-terracotta cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-ink-faint text-sm">Loading…</p>
