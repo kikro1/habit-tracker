@@ -37,7 +37,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper px-4">
+    <div className="min-h-dvh flex items-center justify-center bg-paper px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8 text-center">
           <div className="w-12 h-12 rounded-full bg-moss text-paper flex items-center justify-center mb-3 shadow-card">

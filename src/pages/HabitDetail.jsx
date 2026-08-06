@@ -127,15 +127,17 @@ export default function HabitDetail() {
       )}
 
       <div className="flex items-start justify-between gap-4 mb-8">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           <div
-            className="w-4 h-4 rounded-full shrink-0"
+            className="w-4 h-4 rounded-full shrink-0 mt-1.5"
             style={{ backgroundColor: habit.color }}
           />
-          <div>
-            <h1 className="font-display text-3xl text-ink">{habit.name}</h1>
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl sm:text-3xl text-ink break-words">
+              {habit.name}
+            </h1>
             {habit.description && (
-              <p className="text-ink-faint text-sm mt-1">{habit.description}</p>
+              <p className="text-ink-faint text-sm mt-1 break-words">{habit.description}</p>
             )}
           </div>
         </div>
@@ -157,18 +159,18 @@ export default function HabitDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-8">
         <StatCard icon={Flame} label="Current streak" color="var(--color-amber)">
-          <div className="flex items-center gap-3">
-            <span className="font-mono-num text-3xl text-ink">{streak}</span>
+          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
+            <span className="font-mono-num text-xl sm:text-3xl text-ink shrink-0">{streak}</span>
             <TallyMarks count={streak} color={habit.color} />
           </div>
         </StatCard>
         <StatCard icon={Trophy} label="Best streak" color="var(--color-moss)">
-          <span className="font-mono-num text-3xl text-ink">{best}</span>
+          <span className="font-mono-num text-xl sm:text-3xl text-ink">{best}</span>
         </StatCard>
         <StatCard icon={TrendingUp} label="Last 30 days" color="var(--color-terracotta)">
-          <span className="font-mono-num text-3xl text-ink">{completion}%</span>
+          <span className="font-mono-num text-xl sm:text-3xl text-ink">{completion}%</span>
         </StatCard>
       </div>
 
@@ -235,9 +237,9 @@ export default function HabitDetail() {
 
 function StatCard({ icon: Icon, label, color, children }) {
   return (
-    <div className="bg-paper-dim border border-line rounded-card shadow-card p-4">
-      <div className="flex items-center gap-1.5 text-xs text-ink-faint font-medium mb-2">
-        <Icon size={13} style={{ color }} />
+    <div className="bg-paper-dim border border-line rounded-card shadow-card p-3 sm:p-4 min-w-0">
+      <div className="flex items-center gap-1.5 text-xs text-ink-faint font-medium mb-2 truncate">
+        <Icon size={13} className="shrink-0" style={{ color }} />
         {label}
       </div>
       {children}

@@ -13,8 +13,8 @@ export default function Layout() {
     }`
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-line bg-paper-dim/80 backdrop-blur sticky top-0 z-10">
+    <div className="min-h-dvh flex flex-col">
+      <header className="border-b border-line bg-paper-dim/80 backdrop-blur sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 font-display text-xl text-ink">
             <div className="w-8 h-8 rounded-full bg-moss text-paper flex items-center justify-center shrink-0">
@@ -50,7 +50,7 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
     </div>

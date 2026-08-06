@@ -23,6 +23,10 @@ export default function NewHabitModal({ habit, onClose, onSubmit }) {
   const [reminderTime, setReminderTime] = useState(habit?.reminder_time?.slice(0, 5) ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  // skip autofocus on touch devices — popping the keyboard the instant the
+  // modal mounts reads as a layout jump, not a helpful affordance
+  const shouldAutoFocus =
+    typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -54,8 +58,8 @@ export default function NewHabitModal({ habit, onClose, onSubmit }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm px-4">
-      <div className="w-full max-w-md bg-paper border border-line rounded-card shadow-card-hover p-6">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-ink/40 backdrop-blur-sm px-4 py-6 sm:py-10">
+      <div className="w-full max-w-md bg-paper border border-line rounded-card shadow-card-hover p-6 my-auto max-h-full overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-2xl text-ink">
             {isEdit ? 'Edit habit' : 'New habit'}
@@ -75,7 +79,7 @@ export default function NewHabitModal({ habit, onClose, onSubmit }) {
             <input
               type="text"
               required
-              autoFocus
+              autoFocus={shouldAutoFocus}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="rounded-lg border border-line bg-paper-dim px-3 py-2 text-ink outline-none focus:border-moss focus:ring-1 focus:ring-moss"
