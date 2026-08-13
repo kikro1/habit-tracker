@@ -2,8 +2,18 @@ import { Link } from 'react-router-dom'
 import { Check, Flame, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import TallyMarks from './TallyMarks'
+import BackdateMenu from './BackdateMenu'
 
-export default function HabitCard({ habit, doneToday, streak, onToggle, onEdit, onDelete }) {
+export default function HabitCard({
+  habit,
+  logs,
+  doneToday,
+  streak,
+  onToggle,
+  onToggleDate,
+  onEdit,
+  onDelete,
+}) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const frequencyLabel =
@@ -54,6 +64,8 @@ export default function HabitCard({ habit, doneToday, streak, onToggle, onEdit, 
             </span>
           </div>
         </div>
+
+        <BackdateMenu habit={habit} logs={logs} onToggleDate={onToggleDate} />
 
         <div className="relative shrink-0">
           <button

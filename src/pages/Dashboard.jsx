@@ -46,30 +46,29 @@ export default function Dashboard() {
     loadData()
   }, [loadData])
 
-  async function handleToggle(habit) {
-    const today = todayStr()
+  async function handleToggleDate(habit, dateStr) {
     const currentLogs = logsByHabit[habit.id] ?? []
-    const doneToday = currentLogs.includes(today)
+    const isDone = currentLogs.includes(dateStr)
 
-    if (doneToday) {
+    if (isDone) {
       const { error } = await supabase
         .from('habit_logs')
         .delete()
         .eq('habit_id', habit.id)
-        .eq('date', today)
+        .eq('date', dateStr)
       if (error) {
         setBanner(error.message)
         return
       }
       setLogsByHabit((prev) => ({
         ...prev,
-        [habit.id]: (prev[habit.id] ?? []).filter((d) => d !== today),
+        [habit.id]: (prev[habit.id] ?? []).filter((d) => d !== dateStr),
       }))
     } else {
       const { error } = await supabase.from('habit_logs').insert({
         habit_id: habit.id,
         user_id: user.id,
-        date: today,
+        date: dateStr,
       })
       if (error) {
         setBanner(error.message)
@@ -77,7 +76,7 @@ export default function Dashboard() {
       }
       setLogsByHabit((prev) => ({
         ...prev,
-        [habit.id]: [...(prev[habit.id] ?? []), today],
+        [habit.id]: [...(prev[habit.id] ?? []), dateStr],
       }))
     }
   }
@@ -170,9 +169,11 @@ export default function Dashboard() {
               <HabitCard
                 key={habit.id}
                 habit={habit}
+                logs={logs}
                 doneToday={logs.includes(today)}
                 streak={getCurrentStreak(logs, habit.frequency, habit.goal_target)}
-                onToggle={() => handleToggle(habit)}
+                onToggle={() => handleToggleDate(habit, today)}
+                onToggleDate={handleToggleDate}
                 onEdit={() => setEditingHabit(habit)}
                 onDelete={() => handleDelete(habit)}
               />
