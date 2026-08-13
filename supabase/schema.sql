@@ -164,3 +164,63 @@ create policy "habit_logs_update_own" on public.habit_logs
 drop policy if exists "habit_logs_delete_own" on public.habit_logs;
 create policy "habit_logs_delete_own" on public.habit_logs
   for delete using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- push_subscriptions — one row per browser/device a user has enabled
+-- reminder notifications on (Web Push endpoint + keys)
+-- ---------------------------------------------------------------------------
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists push_subscriptions_user_id_idx on public.push_subscriptions (user_id);
+
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists "push_subscriptions_select_own" on public.push_subscriptions;
+create policy "push_subscriptions_select_own" on public.push_subscriptions
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "push_subscriptions_insert_own" on public.push_subscriptions;
+create policy "push_subscriptions_insert_own" on public.push_subscriptions
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "push_subscriptions_delete_own" on public.push_subscriptions;
+create policy "push_subscriptions_delete_own" on public.push_subscriptions
+  for delete using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- reminder_sends — dedup ledger so the reminder sender (service-role only,
+-- no client access) never pushes the same habit twice on the same day
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  habits_id_type text;
+begin
+  select data_type into habits_id_type
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'habits' and column_name = 'id';
+
+  if not exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'reminder_sends'
+  ) then
+    execute format(
+      'create table public.reminder_sends (
+         habit_id %s not null references public.habits (id) on delete cascade,
+         date date not null,
+         sent_at timestamptz not null default now(),
+         primary key (habit_id, date)
+       )',
+      habits_id_type
+    );
+  end if;
+end $$;
+
+alter table public.reminder_sends enable row level security;
+-- intentionally no policies: only the service role (edge function) touches this table

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { X, BellRing } from 'lucide-react'
-import { requestNotificationPermission } from '../utils/notifications'
+import { useAuth } from '../context/AuthContext'
+import { ensurePushSubscription } from '../utils/notifications'
+import { localTimeToUtc, utcTimeToLocal } from '../utils/time'
 
 const COLORS = [
   '#3f5b46', // moss
@@ -14,13 +16,14 @@ const COLORS = [
 ]
 
 export default function NewHabitModal({ habit, onClose, onSubmit }) {
+  const { user } = useAuth()
   const isEdit = Boolean(habit)
   const [name, setName] = useState(habit?.name ?? '')
   const [description, setDescription] = useState(habit?.description ?? '')
   const [color, setColor] = useState(habit?.color ?? COLORS[0])
   const [frequency, setFrequency] = useState(habit?.frequency ?? 'daily')
   const [goalTarget, setGoalTarget] = useState(habit?.goal_target ?? 1)
-  const [reminderTime, setReminderTime] = useState(habit?.reminder_time?.slice(0, 5) ?? '')
+  const [reminderTime, setReminderTime] = useState(utcTimeToLocal(habit?.reminder_time))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   // skip autofocus on touch devices — popping the keyboard the instant the
@@ -35,7 +38,12 @@ export default function NewHabitModal({ habit, onClose, onSubmit }) {
     setError('')
 
     if (reminderTime) {
-      requestNotificationPermission()
+      const { error: pushError } = await ensurePushSubscription(user.id)
+      if (pushError) {
+        setSubmitting(false)
+        setError(pushError.message)
+        return
+      }
     }
 
     const result = await onSubmit({
@@ -44,7 +52,7 @@ export default function NewHabitModal({ habit, onClose, onSubmit }) {
       color,
       frequency,
       goal_target: Number(goalTarget),
-      reminder_time: reminderTime || null,
+      reminder_time: localTimeToUtc(reminderTime),
     })
 
     setSubmitting(false)
@@ -158,7 +166,7 @@ export default function NewHabitModal({ habit, onClose, onSubmit }) {
             />
             {reminderTime && (
               <span className="text-xs text-ink-faint">
-                Needs this tab open and browser notifications allowed.
+                Sends a push notification — you'll be asked to allow it.
               </span>
             )}
           </label>

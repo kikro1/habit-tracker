@@ -1,11 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Sprout, BookOpenText, BarChart3, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import useHabitReminders from '../hooks/useHabitReminders'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
-  useHabitReminders(Boolean(user))
 
   const linkClass = ({ isActive }) =>
     `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
