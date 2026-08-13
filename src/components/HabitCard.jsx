@@ -3,6 +3,7 @@ import { Check, Flame, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import TallyMarks from './TallyMarks'
 import BackdateMenu from './BackdateMenu'
+import { getCurrentWeekCount } from '../utils/streaks'
 
 export default function HabitCard({
   habit,
@@ -15,13 +16,16 @@ export default function HabitCard({
   onDelete,
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const isWeekly = habit.frequency === 'weekly'
 
-  const frequencyLabel =
-    habit.frequency === 'weekly'
-      ? `${habit.goal_target}× / week`
-      : habit.goal_target > 1
-        ? `${habit.goal_target}× / day`
-        : 'Every day'
+  const frequencyLabel = isWeekly
+    ? `${habit.goal_target}× / week`
+    : habit.goal_target > 1
+      ? `${habit.goal_target}× / day`
+      : 'Every day'
+
+  const weekCount = isWeekly ? getCurrentWeekCount(logs) : 0
+  const weekPct = isWeekly ? Math.min(100, Math.round((weekCount / habit.goal_target) * 100)) : 0
 
   return (
     <div className="group bg-paper-dim border border-line rounded-card p-4 shadow-card hover:shadow-card-hover transition-shadow relative">
@@ -60,9 +64,24 @@ export default function HabitCard({
             </span>
             <span className="flex items-center gap-1 text-xs text-ink-faint font-mono-num">
               <Flame size={13} className="text-amber" />
-              {streak} day{streak === 1 ? '' : 's'}
+              {streak} {isWeekly ? 'week' : 'day'}
+              {streak === 1 ? '' : 's'}
             </span>
           </div>
+
+          {isWeekly && (
+            <div className="mt-2.5 flex items-center gap-2">
+              <div className="flex-1 h-1.5 rounded-full bg-paper-deep overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${weekPct}%`, backgroundColor: habit.color }}
+                />
+              </div>
+              <span className="text-xs text-ink-faint font-mono-num shrink-0">
+                {weekCount}/{habit.goal_target} this week
+              </span>
+            </div>
+          )}
         </div>
 
         <BackdateMenu habit={habit} logs={logs} onToggleDate={onToggleDate} />

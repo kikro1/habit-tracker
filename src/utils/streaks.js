@@ -186,3 +186,11 @@ export function isFutureDate(dateStr) {
 export function todayStr() {
   return format(new Date(), 'yyyy-MM-dd')
 }
+
+/** Number of logs so far in the current week (Mon-Sun). */
+export function getCurrentWeekCount(logDates) {
+  if (!logDates || logDates.length === 0) return 0
+  const counts = countsByWeek(logDates)
+  const key = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+  return counts.get(key) || 0
+}
